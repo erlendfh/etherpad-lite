@@ -47,11 +47,29 @@ catch(e)
 }
 
 var serverName = "Etherpad-Lite " + version + " (http://j.mp/ep-lite)";
+var plugins = [];
 
 //cache a week
 exports.maxAge = 1000*60*60*6;
 
 async.waterfall([
+  // initialize plugins
+  function (callback) {
+    var pluginsDir = path.normalize(__dirname + "/../plugins/");
+    fs.readdir(pluginsDir, function (err, files) {
+      files.forEach(function (file) {
+        var initFile = pluginsDir + file + "/init.js";
+        if (fs.stat(initFile, function (err, stats) {
+          if (!err) {
+            plugins.push(require(initFile));
+          }
+        }));
+      });
+      
+      callback(null);
+    });
+  },
+  
   //initalize the database
   function (callback)
   {
@@ -62,6 +80,11 @@ async.waterfall([
   {
     //create server
     var app = express.createServer();
+    
+    plugins.forEach(function (plugin) {
+      if (plugin.preInitialize)
+        plugin.preInitialize(app, db, settings);
+    });
     
     //set logging
     if(settings.logHTTP)
@@ -160,6 +183,11 @@ async.waterfall([
     socketIORouter.setSocketIO(io);
     socketIORouter.addComponent("pad", padMessageHandler);
     socketIORouter.addComponent("timeslider", timesliderMessageHandler);
+    
+    plugins.forEach(function (plugin) {
+      if (plugin.postInitialize)
+        plugin.postInitialize(app, db, settings);
+    });
     
     callback(null);  
   }
