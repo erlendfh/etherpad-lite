@@ -55,12 +55,20 @@ var plugins = [];
 exports.maxAge = 1000*60*60*6;
 
 async.waterfall([
+  //initalize the database
+  function (callback)
+  {
+    db.init(callback);
+  },
+
   // initialize plugins
   function (callback) {
+    console.log("initing plugins");
     var pluginsDir = path.normalize(__dirname + "/../plugins/");
     fs.readdir(pluginsDir, function (err, files) {
       files.forEach(function (file) {
         var initFile = pluginsDir + file + "/init.js";
+        console.log("loading " + initFile);
         fs.stat(initFile, function (err, stats) {
           if (!err) {
             plugins.push(require(initFile));
@@ -72,26 +80,22 @@ async.waterfall([
     });
   },
   
-  //initalize the database
-  function (callback)
-  {
-    db.init(callback);
-  },
   //initalize the http server
   function (callback)
   {
     //create server
     var app = express.createServer();
     
+    //set logging
+    if(settings.logHTTP)
+      app.use(express.logger({ format: ':date: :status, :method :url' }));
+
+    // run plugin pre initializers
     plugins.forEach(function (plugin) {
       if (plugin.preInitialize)
         plugin.preInitialize(app, db, settings);
     });
-    
-    //set logging
-    if(settings.logHTTP)
-      app.use(express.logger({ format: ':date: :status, :method :url' }));
-    
+
     //serve static files
     app.get('/static/*', function(req, res)
     { 
@@ -178,6 +182,12 @@ async.waterfall([
       var filePath = path.normalize(__dirname + "/../static/favicon.ico");
       res.sendfile(filePath, { maxAge: exports.maxAge });
     });
+    
+    plugins.forEach(function (plugin) {
+      if (plugin.initializeRoutes)
+        plugin.initializeRoutes(app, db, settings);
+    });
+    
     
     //let the server listen
     app.listen(settings.port);
