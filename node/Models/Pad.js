@@ -6,7 +6,6 @@ var Changeset = require("../Changeset");
 var AttributePoolFactory = require("../AttributePoolFactory");
 var db = require("../db").db;
 var async = require("async");
-var settings = require('../settings');
 
 /**
  * Copied from the Etherpad source code. It converts Windows line breaks to Unix line breaks and convert Tabs to spaces
@@ -186,7 +185,7 @@ Class('Pad', {
 			return this.atext.text;
 		},
 		
-		init : function (callback) 
+		init : function (callback,defaultText) 
 		{		
 		  var _this = this;
 		
@@ -209,13 +208,16 @@ Class('Pad', {
     	  //this pad doesn't exist, so create it
     	  else
     	  {
-    	    var firstChangeset = Changeset.makeSplice("\n", 0, 0, exports.cleanText(settings.defaultPadText));                      
-    	
-  		    _this.appendRevision(firstChangeset, '');
+          _this.setText(defaultText || '', '');
     	  }
     	  
     	  callback(null);
     	});
+    },
+    
+    setText: function (text, author) {
+	    var changeset = Changeset.makeSplice(this.text(), 0, this.text().length, text);
+	    this.appendRevision(changeset, author);
     } 
 		
 	}, // methods

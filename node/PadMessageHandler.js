@@ -23,6 +23,7 @@ var padManager = require("./PadManager");
 var Changeset = require("./Changeset");
 var AttributePoolFactory = require("./AttributePoolFactory");
 var authorManager = require("./AuthorManager");
+var settings = require('./settings');
 
 /**
  * A associative array that translates a session to a pad
@@ -542,7 +543,7 @@ function handleClientReady(client, message)
             {
               pad = value;
               callback(err);
-            });
+            }, settings.defaultPadText);
           }
         ], callback);
       });

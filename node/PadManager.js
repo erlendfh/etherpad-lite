@@ -30,8 +30,8 @@ globalPads = [];
  * @param id A String with the id of the pad
  * @param {Function} callback 
  */
-exports.getPad = function(id, callback)
-{    
+exports.getPad = function(id, callback, defaultText)
+{
   var pad = globalPads[id];
   
   //return pad if its already loaded
@@ -56,7 +56,7 @@ exports.getPad = function(id, callback)
         globalPads[id] = pad;
         callback(null, pad);
       }
-    });
+    }, defaultText);
   }
   
   //globalPads[id].timestamp = new Date().getTime();
